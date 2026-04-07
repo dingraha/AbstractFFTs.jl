@@ -473,6 +473,7 @@ Return the discrete Fourier transform (DFT) sample frequencies for a DFT of leng
 `Frequencies` object is an `AbstractVector` containing the frequency
 bin centers at every sample point. `fs` is the sampling rate of the
 input signal, which is the reciprocal of the sample spacing.
+The return values are not to be confused with angular frequencies, which are obtained by multiplying the output by `2π`.
 
 Given a window of length `n` and a sampling rate `fs`, the frequencies returned are
 
@@ -508,6 +509,7 @@ Return the discrete Fourier transform (DFT) sample frequencies for a real DFT of
 The returned `Frequencies` object is an `AbstractVector`
 containing the frequency bin centers at every sample point. `fs`
 is the sampling rate of the input signal, which is the reciprocal of the sample spacing.
+The return values are not to be confused with angular frequencies, which are obtained by multiplying the output by `2π`.
 
 Given a window of length `n` and a sampling rate `fs`, the frequencies returned are
 
@@ -649,6 +651,9 @@ struct AdjointPlan{T,P<:Plan} <: Plan{T}
     AdjointPlan{T,P}(p) where {T,P} = new(p)
 end
 
+# We eagerly form the plan inverse in the adjoint(p) call, which will be cached for subsequent calls.
+# This is reasonable, as inv(p) would do the same, and necessary in order to compute the correct input
+# type for the adjoint plan and encode it in its type.
 """
     (p::Plan)'
     adjoint(p::Plan)
@@ -659,9 +664,6 @@ Return a plan that performs the adjoint operation of the original plan.
     Adjoint plans do not currently support `LinearAlgebra.mul!`. Further, as a new addition to `AbstractFFTs`, 
     coverage of `Base.adjoint` in downstream implementations may be limited. 
 """
-# We eagerly form the plan inverse in the adjoint(p) call, which will be cached for subsequent calls.
-# This is reasonable, as inv(p) would do the same, and necessary in order to compute the correct input
-# type for the adjoint plan and encode it in its type.
 Base.adjoint(p::Plan{T}) where {T} = AdjointPlan{eltype(inv(p)), typeof(p)}(p)
 Base.adjoint(p::AdjointPlan) = p.p
 # always have AdjointPlan inside ScaledPlan.
